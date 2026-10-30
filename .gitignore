@@ -19,3 +19,6 @@ _site/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Planejamento privado (não versionar)
+SPEC_SAAS.md

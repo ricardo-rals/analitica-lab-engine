@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Analytica Lab Engine</title>
+    <script>
+      // O app muda a URL ao trocar de página (ex.: /repo/bromatologia). Ao recarregar, o GitHub Pages não
+      // encontra esse arquivo e serve este 404: voltamos para a raiz do app (a página inicial).
+      const repo = location.pathname.split("/").filter(Boolean)[0];
+      location.replace(repo ? `/${repo}/` : "/");
+    </script>
+  </head>
+  <body>Redirecionando…</body>
+</html>

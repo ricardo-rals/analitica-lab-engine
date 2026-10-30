@@ -117,6 +117,80 @@ Unidades fixas de bancada: massa em g, volume em mL, massa molar em g/mol.
 - [x] **RF-08.9** A diluição (RF-05) passa para a mesma aba, que é renomeada para **Soluções**.
 - **Validações:** exatamente um campo em branco; valores ≤ 0 → erro; % m/m e % v/v: soluto > solução → erro; título do reagente > 100 % → erro; mistura com listas de tamanhos diferentes → erro.
 
+### Registro de decisões (revisão da analista química)
+
+`A` = decidido pela analista · `D` = decisão técnica tomada pelo dev onde a analista não tinha a resposta (revisável).
+
+| # | Tema | Decisão | Origem |
+|---|---|---|---|
+| 1 | Tolerância entre réplicas | CV máximo **configurável por análise na tela**, padrão 5 %. Acima disso, aviso "repetir a análise". O laboratório ajusta ao seu POP | D |
+| 2 | Umidade | Estufa 105 °C até massa constante; pré-secagem (ASA × ASE) disponível como opção | A + D |
+| 3 | Cinzas | Mufla 550 °C / 5 h (registrado no laudo) | A |
+| 4 | Kjeldahl | Ácido bórico + titulação direta; catalisador CuSO₄/K₂SO₄ registrado no laudo; tabela de fatores de Jones | A |
+| 5 | Extrato etéreo | Soxhlet, éter de petróleo (o modo saquinho sai do escopo) | A |
+| 6 | FDA | Saquinho filtrante (Ankom) com correção do branco; sem correção para cinzas (modo convencional sai do escopo) | A + D |
+| 7 | FDN | **Não há análise de FDN.** O CNF recebe o valor de FDN (ou FDNcp) **digitado** na ficha da amostra, vindo de outra fonte. Assim o CNF continua possível sem criar a análise | A + D |
+| 8 | Variante do CNF | Fórmula padrão `100 − (PB + EE + MM + FDN)`; o campo aceita FDN ou FDNcp (mesma fórmula). Variante com ureia fica fora (YAGNI) | D |
+| 9 | Acidez | Saída em % (m/m ou m/v) **e** em concentração (g/L, para amostras líquidas); °Dornic incluído; índice de acidez e acidez em solução normal mantidos | A |
+| 10 | Ferramenta × ensino | **Ambos:** modo didático (explicação + exemplo carregável) e página de exercícios com gabarito | A |
+| 11 | Ajuste de pH | Incluído: modo tampão (fração da base pelo pKa) e modo ácido/base forte (balanço de H⁺/OH⁻ com diluição) | A |
+| 12 | Arredondamento | **ABNT NBR 5891** em toda a exibição de resultados, mais uma calculadora de algarismos significativos | A |
+| 13 | Cartas de controle | Média e s alvo calculados das **20 primeiras medições** (configurável; com menos de 20, usa todas com aviso). Série importada/exportada em CSV enquanto não há histórico persistente | A + D |
+| 14 | Validação de métodos (RDC 166) | Módulo completo **adiado**; entra o diagnóstico da curva (IC de a e b, teste do intercepto, falta de ajuste, homocedasticidade por Cochran, s_x0) | D |
+| 15 | Regressão múltipla | Fora do escopo | A |
+| 16 | Regressão ponderada e Monte Carlo | Adiados (P3, sem demanda concreta) | D |
+| 17 | ANOVA de dois fatores | Incluída (delineamento balanceado, com repetição) | A |
+| 18 | Tampão bicarbonato | Corrigido para o par **HCO₃⁻/CO₃²⁻ (pKa 10,33)**: o par do pKa 6,35 (CO₂/HCO₃⁻) não tem forma ácida pesável. Citrato sai do catálogo (triprótico, Henderson–Hasselbalch simples não se aplica) e fica via "Outro" | D |
+| 19 | Navegação | `st.navigation` com seções (testado no stlite: Streamlit 1.45.1). Campos e tabelas preservados ao trocar de página | D |
+
+### RF-09 Bromatologia (`modules/bromatology.py`) — % (g/100 g)
+- [x] **RF-09.0 Base comum:** réplicas com média, s, CV e Grubbs (RF-03); aviso quando CV > tolerância (decisão 1); conversão para base seca `X(%MS) = X(%MN) / MS × 100`.
+- [x] **RF-09.0.1 Ficha da amostra:** os resultados de cada análise ficam na sessão (MN e MS); MO e CNF/CT calculados quando os dados existem; exportação CSV/PDF da ficha.
+- [x] **RF-09.1 Umidade/MS:** `U = (m_tara + m_amostra − m_tara+seca) / m_amostra × 100`; `MS = 100 − U`; pré-secagem `MS = ASA × ASE / 100`.
+- [x] **RF-09.2 Cinzas/MO:** `MM = (m_cad+cinzas − m_cad) / m_amostra × 100`; `MO(%MS) = 100 − MM(%MS)`.
+- [x] **RF-09.3 Proteína bruta (Kjeldahl):** `N = (V − V_branco) × C × f × r × 14,007 / (m × 1000) × 100`; `PB = N × F`.
+- [x] **RF-09.4 Extrato etéreo (Soxhlet):** `EE = (m_balão+gordura − m_balão) / m_amostra × 100`.
+- [x] **RF-09.5 FDA (Ankom):** `FDA = (W3 − W1 × C1) / W2 × 100`; `C1 = branco final / branco inicial`.
+- [x] **RF-09.6 CNF:** `CNF = 100 − (PB + EE + MM + FDN)`; `CT = 100 − (PB + EE + MM)`, tudo em %MS.
+- [x] **RF-09.7 Acidez:** `% = V × C × f × M / (k × m × 10)` (m em g ou mL); `g/L = V × C × f × M / (k × V_amostra)`; `°D = g/L de ácido lático × 10`; `IA = V × C × f × 56,11 / m`; `mL N/100 g = V × f × 100 / (m × c)`.
+- **Validações:** massas ≤ 0; ganho de massa na umidade; resíduo > amostra; resultado fora de 0–100 %; branco ≥ volume; CNF < 0 → erro; PB + EE + MM + FDN > 100 → erro.
+
+### RF-10 Fundamentos (`modules/conversions.py`)
+- [x] **RF-10.1** Conversor SI: massa (kg, g, mg, µg), volume (L, mL, µL), temperatura (°C, K, °F), pressão (atm, kPa, bar, mmHg).
+- [x] **RF-10.2** Regra de três direta e inversa (resolvedor "preencha todos menos um").
+- [x] **RF-10.3** Algarismos significativos: contar e arredondar a n significativos pela NBR 5891.
+
+### RF-11 Cálculos intermediários (`modules/stoichiometry.py`)
+- [x] **RF-11.1 Estequiometria:** reagente limitante, massas teóricas dos produtos e sobra dos reagentes em excesso. Reagente sem massa informada = em excesso.
+- [x] **RF-11.2 Rendimento:** `% = massa real / massa teórica × 100`.
+- [x] **RF-11.3 Tampão:** Henderson–Hasselbalch → concentrações e massas das formas ácida e básica; aviso se |pH − pKa| > 1.
+- [x] **RF-11.4 Ajuste de pH:** tampão: `n_base = C_T × V × (α(pH_b) − α(pH_a))`, `α = 1 / (1 + 10^(pKa − pH))`; forte: `V_t = V × (E_a − E_b) / (C_t + E_b)` com `E = [H⁺] − [OH⁻]` (base) e o simétrico para ácido.
+- [x] **RF-11.5 Erros e exatidão:** erro absoluto e relativo; recuperação `(C_fort − C_não fort) / C_adic × 100`.
+- [x] **RF-11.6 NBR 5891:** `utils/formatting.fmt` arredonda pela regra do par sobre a representação decimal.
+
+### RF-12 Estatística descritiva (`modules/stats.py`)
+- [x] **RF-12.1** Mediana, moda, média ponderada, variância, amplitude, quartis, IQR, erro padrão da média.
+- [x] **RF-12.2** Q de Dixon (n = 3–10, 95 %) e regra do boxplot (1,5 × IQR), além do Grubbs.
+- [x] **RF-12.3** Normal: probabilidade entre limites e escore z; t crítico; Shapiro–Wilk; histograma com curva normal; boxplot.
+
+### RF-13 Inferencial e controle (`modules/inferential.py`, `modules/control.py`)
+- [x] **RF-13.1** Teste t: uma amostra × referência; duas amostras (F decide entre agrupado e Welch); pareado. Conclusão em português.
+- [x] **RF-13.2** Teste F de variâncias (bilateral).
+- [x] **RF-13.3** ANOVA de um fator com Tukey; ANOVA de dois fatores balanceada com repetição.
+- [x] **RF-13.4** Cartas I-MR (Shewhart) e Levey-Jennings com regras de Westgard (1-2s alerta; 1-3s, 2-2s, R-4s, 4-1s, 10x rejeição); alvo das N primeiras medições; CSV de entrada e saída.
+
+### RF-14 Regressão e incerteza (`modules/spectro.py`, `modules/uncertainty.py`)
+- [x] **RF-14.1** Diagnóstico da curva: IC de a e b, teste de b = 0, falta de ajuste (com réplicas por nível), homocedasticidade por Cochran (RDC 166), `s_x0`.
+- [x] **RF-14.2** Orçamento de incerteza (GUM): tipo A `s/√n`, tipo B (padrão, certificado k, retangular, triangular); combinação relativa para modelos de produto/quociente; ν_eff (Welch–Satterthwaite); U = k·u_c (k = 2 ou t(ν_eff)); contribuição de cada fonte; exemplo pronto da padronização.
+
+### RF-15 Decisão multicritério (`modules/decision.py`)
+- [x] **RF-15.1 AHP:** pesos pelo autovetor principal, λmax, IC, RC (IA de Saaty), aviso se RC > 0,10 indicando o par mais incoerente.
+- [x] **RF-15.2 TOPSIS:** normalização vetorial, pesos (do AHP ou digitados), benefício/custo, D⁺, D⁻, proximidade e ranking; exportação PDF.
+
+### RF-16 Modo didático e exercícios (`ui/`)
+- [x] **RF-16.1** Chave "Modo didático" na barra lateral: cada tela nova mostra "📘 Entenda o cálculo" (fórmula explicada) e um botão "Carregar exemplo".
+- [x] **RF-16.2** Página de exercícios: banco de exercícios por módulo; o usuário responde e o app corrige com tolerância, mostrando a resolução.
+
 ## 4. Requisitos não funcionais
 
 - **RNF-01 Formatação:** resultados com casas decimais configuráveis (padrão 4); notação científica quando |x| < 0,01 ou ≥ 1e4. Exibição com vírgula decimal (pt-BR).
@@ -129,7 +203,12 @@ Unidades fixas de bancada: massa em g, volume em mL, massa molar em g/mol.
 ## 5. Interface
 
 Sidebar: navegação + rastreabilidade (RF-06.3) + casas decimais (RNF-01).
-Abas: **Análises** (RF-07, primeira aba, a mais usada no dia a dia) · **Titulação** (cálculo livre) · **Padronização** · **Estatística** · **Espectrofotometria** · **Soluções** (RF-05 + RF-08, com um seletor de cálculo) · **Como usar**.
+Navegação lateral por seções (`st.navigation`):
+- **Rotina:** Análises (água) · Bromatologia · Titulação · Padronização · Espectrofotometria (com diagnóstico da curva)
+- **Soluções e cálculos:** Soluções · Estequiometria e pH · Conversões e erros
+- **Estatística:** Descritiva · Distribuições · Testes de hipótese · ANOVA · Cartas de controle · Incerteza
+- **Gestão:** AHP / TOPSIS
+- **Ajuda:** Como usar · Exercícios
 Na aba Análises: selectbox da análise → card com referência, titulante e indicador → entradas → etapas → resultado.
 Cada aba: entradas (parâmetros + `st.data_editor` para réplicas) → bloco "Etapas do cálculo" → resultado final destacado (`st.metric`) → botões de exportação.
 
@@ -168,6 +247,34 @@ Viram testes em `tests/`. Tolerância relativa 1e-3 salvo indicação.
 | CA-27 | 0,5 % → ppm | 5000 ppm |
 | CA-28 | Densidade 1,84 g/mL, V 10 mL, massa em branco | 18,4 g |
 | CA-29 | % m/m com soluto 30 g e solução 20 g; dois campos em branco | `ValueError` |
+| CA-30 | Umidade: tara 20,0000 g; amostra 2,0000 g; tara + seca 21,8200 g | U 9,00 %; MS 91,00 % |
+| CA-31 | Pré-secagem: ASA 30,0 %; ASE 90,0 % | MS 27,0 % |
+| CA-32 | Cinzas: cadinho 20,0000; amostra 2,0000; cadinho + cinzas 20,1200 g; MS 91,00 % | MM 6,00 % MN; 6,59 % MS |
+| CA-33 | Kjeldahl: m 0,2000 g; V 10,00; branco 0,10 mL; HCl 0,1000 mol/L; F 6,25 | N 6,934 %; PB 43,33 % |
+| CA-34 | EE: balão 100,0000; amostra 2,0000; balão + gordura 100,0600 g | 3,00 % |
+| CA-35 | FDA: W1 0,5000; W2 0,5000; W3 0,6500 g; branco 0,5000 → 0,5010 g | 29,80 % |
+| CA-36 | CNF: PB 20; EE 3; MM 6; FDN 40 | CNF 31,0 %; CT 71,0 % |
+| CA-37 | Acidez cítrica: NaOH 0,1000; V 10,00 mL; m 10,00 g | 0,640 % |
+| CA-38 | Óleo: 0,1000 mol/L; V 2,00 mL; m 5,00 g | 1,13 % oleico; IA 2,24 mg KOH/g |
+| CA-39 | 1,000 g Na₂SO₄ (142,04) → BaSO₄ (233,39); obtido 1,5800 g | Teórico 1,6431 g; 96,16 % |
+| CA-40 | Tampão acetato pH 5,00; pKa 4,76; 0,1 mol/L; 1 L | A⁻ 0,06347; HA 0,03653 mol/L; NaAc·3H₂O 8,638 g; HAc 2,193 g |
+| CA-41 | Recuperação: 2,0 → 6,9 com 5,0 adicionado | 98,0 % |
+| CA-42 | t uma amostra 10,10 · 10,20 · 10,15 × 10,00 | t 5,196; gl 2; p 0,035 → significativa |
+| CA-43 | F: A = 10,10 · 10,20 · 10,15; B = 10,30 · 10,35 · 10,25 · 10,40 | F 1,667; p 0,79 → iguais |
+| CA-44 | t duas amostras (A, B), agrupado | t −3,873; gl 5; p 0,0117 |
+| CA-45 | t pareado 10,1 · 10,3 · 10,2 × 10,2 · 10,4 · 10,2 | t −2,000; gl 2; p 0,184 |
+| CA-46 | ANOVA 10,1 · 10,2 · 10,15 / 10,3 · 10,35 · 10,25 / 10,0 · 10,05 · 10,1 | F 19,00; p 0,0025; Tukey: só G1×G2 (p 0,024) e G2×G3 (p 0,002) diferem |
+| CA-47 | Levey-Jennings alvo 100, s 2: 100 · 101 · 99 · 104,5 · 106,5 | 104,5 → 1-2s; 106,5 → 1-3s e 2-2s |
+| CA-48 | Incerteza da padronização: m 0,5105 (u 0,0001); V 25,00 (u 0,02) | C 0,09999; u_c 8,24×10⁻⁵; U 1,65×10⁻⁴ mol/L |
+| CA-49 | AHP [[1, 3, 5], [1/3, 1, 3], [1/5, 1/3, 1]] | 0,637 · 0,258 · 0,105; λmax 3,039; RC 0,033 |
+| CA-50 | TOPSIS (CA-49; A 250/98,0/2,0; B 180/95,0/3,0; C 300/99,5/1,5) | 0,430 · 0,813 · 0,187 → B > A > C |
+| CA-51 | Ajuste de pH, tampão acetato 0,1 mol/L, 1 L, 4,76 → 5,00, NaOH 1 mol/L | 13,47 mL |
+| CA-52 | Ajuste de pH, ácido forte 100 mL pH 2 → 3, NaOH 0,1 mol/L | 8,911 mL |
+| CA-53 | °Dornic: 1,60 mL NaOH 0,1111 mol/L; 10 mL de leite | 1,60 g/L ácido lático; 16,0 °D |
+| CA-54 | Dixon: 10,10 · 10,12 · 10,15 · 10,11 · 10,90 | Q 0,9375 > 0,710 → outlier |
+| CA-55 | ANOVA 2 fatores 2×2, n = 2: A1B1 10, 11; A1B2 12, 13; A2B1 14, 15; A2B2 20, 21 | F_A 144; F_B 64; F_AB 16 |
+| CA-56 | s_x0 da curva do CA-07, amostra A 0,250 (1 leitura) | 0,0185 mg/L; teste b = 0: p 0,257 (não significativo) |
+| CA-57 | NBR 5891 com 2 casas: 2,675 → 2,68; 2,665 → 2,66; 2,6651 → 2,67 | — |
 
 ## 7. Plano de entrega
 
@@ -177,3 +284,5 @@ Viram testes em `tests/`. Tolerância relativa 1e-3 salvo indicação.
 4. **Fase 4 — UI:** `app.py` com as 6 abas, formatação, avisos.
 5. **Fase 5 — relatórios:** CSV e PDF com rastreabilidade.
 6. **Fase 6 — soluções:** RF-08 em `conversions.py`, aba Diluição vira Soluções, testes CA-21 a CA-29.
+7. **Fase 7 — núcleo v2:** módulos RF-09 a RF-15, testes CA-30 a CA-57.
+8. **Fase 8 — UI v2:** navegação por seções, persistência dos campos entre páginas, telas novas, modo didático e exercícios (RF-16), guia atualizado.

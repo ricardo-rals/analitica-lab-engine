@@ -164,3 +164,47 @@ def convert_fraction(value, from_unit, to_unit):
     if from_unit not in FRACTIONS or to_unit not in FRACTIONS:
         raise ValueError(f"Unidade não suportada. Use: {', '.join(FRACTIONS)}.")
     return non_negative("Valor", value) * FRACTIONS[from_unit] / FRACTIONS[to_unit]
+
+
+# Grandeza → {unidade: fator para a unidade base}. Base: g, mL, kPa.
+SI_UNITS = {
+    "Massa": {"kg": 1000.0, "g": 1.0, "mg": 1e-3, "µg": 1e-6},
+    "Volume": {"L": 1000.0, "mL": 1.0, "µL": 1e-3},
+    "Pressão": {"atm": 101.325, "kPa": 1.0, "bar": 100.0, "mmHg": 101.325 / 760},
+}
+TEMPERATURE_UNITS = ["°C", "K", "°F"]
+
+
+def convert_unit(value, quantity, from_unit, to_unit):
+    """Conversão por fator: valor · fator(de) / fator(para). Temperatura tem escala com deslocamento."""
+    if quantity == "Temperatura":
+        return convert_temperature(value, from_unit, to_unit)
+    units = SI_UNITS.get(quantity)
+    if units is None or from_unit not in units or to_unit not in units:
+        raise ValueError("Unidade não suportada.")
+    v = non_negative("Valor", value)
+    return v * units[from_unit] / units[to_unit]
+
+
+def convert_temperature(value, from_unit, to_unit):
+    """°C ↔ K ↔ °F: K = °C + 273,15 ; °F = °C × 9/5 + 32. Abaixo de 0 K → erro."""
+    if from_unit not in TEMPERATURE_UNITS or to_unit not in TEMPERATURE_UNITS:
+        raise ValueError("Unidade de temperatura não suportada.")
+    if value is None:
+        raise ValueError("Informe Valor.")
+    v = float(value)
+    kelvin = {"°C": v + 273.15, "K": v, "°F": (v - 32) * 5 / 9 + 273.15}[from_unit]
+    if kelvin < 0:
+        raise ValueError("Temperatura abaixo do zero absoluto (0 K).")
+    return {"°C": kelvin - 273.15, "K": kelvin, "°F": (kelvin - 273.15) * 9 / 5 + 32}[to_unit]
+
+
+def rule_of_three(a=None, b=None, c=None, x=None, inverse=False):
+    """Regra de três: a está para b assim como c está para x.
+
+    Direta: a/b = c/x  →  a·x = b·c ;  Inversa: a·b = c·x.
+    """
+    labels = {"a": "A", "b": "B", "c": "C", "x": "X"}
+    if inverse:
+        return _solve({"a": a, "b": b}, {"c": c, "x": x}, labels)
+    return _solve({"a": a, "x": x}, {"b": b, "c": c}, labels)

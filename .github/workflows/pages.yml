@@ -40,7 +40,7 @@ jobs:
       - name: Montar o site (só o que o navegador carrega)
         run: |
           mkdir _site
-          cp -r index.html app.py modules utils docs _site/
+          cp -r index.html 404.html app.py modules utils ui docs _site/
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
