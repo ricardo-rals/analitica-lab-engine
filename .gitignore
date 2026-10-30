@@ -1,0 +1,21 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Build do GitHub Pages (gerado pelo workflow)
+_site/
+
+# Segredos e configuração local
+.env
+.streamlit/secrets.toml
+.claude/settings.local.json
+
+# Editores e sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

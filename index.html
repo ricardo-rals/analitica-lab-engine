@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Analytica Lab Engine</title>
+    <!-- stlite: Streamlit rodando no navegador via Pyodide (sem servidor). Versão fixada: a API muda entre releases. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@0.85.1/build/stlite.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.85.1/build/stlite.js";
+
+      // Arquivo .py novo no projeto? Acrescente aqui, senão ele não existe no navegador.
+      const files = [
+        "app.py",
+        "modules/__init__.py",
+        "modules/validation.py",
+        "modules/stats.py",
+        "modules/titration.py",
+        "modules/spectro.py",
+        "modules/conversions.py",
+        "modules/methods.py",
+        "utils/__init__.py",
+        "utils/formatting.py",
+        "utils/report.py",
+      ];
+
+      mount(
+        {
+          // streamlit, pandas, numpy e altair já vêm com o stlite.
+          requirements: ["scipy", "fpdf2"],
+          entrypoint: "app.py",
+          files: Object.fromEntries(files.map((f) => [f, { url: `./${f}` }])),
+        },
+        document.getElementById("root"),
+      );
+    </script>
+  </body>
+</html>

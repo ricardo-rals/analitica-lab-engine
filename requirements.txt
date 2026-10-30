@@ -1,0 +1,6 @@
+streamlit
+pandas
+numpy
+scipy
+fpdf2
+pytest
