@@ -4,6 +4,7 @@ Toda a química está em modules/; aqui ficam só entrada, exibição e exporta�
 Campos numéricos são texto para aceitar vírgula decimal (RNF-02).
 """
 from datetime import datetime
+from pathlib import Path
 
 import altair as alt
 import pandas as pd
@@ -17,7 +18,7 @@ st.set_page_config(page_title="Analytica Lab Engine", page_icon="⚗️", layout
 
 # ---------------------------------------------------------------- sidebar
 st.sidebar.title("⚗️ Analytica Lab Engine")
-st.sidebar.caption("Cálculos de laboratório analítico")
+st.sidebar.caption("Cálculos de laboratório analítico · primeira vez? Veja a aba **📖 Como usar**")
 st.sidebar.subheader("Rastreabilidade")
 sample_id = st.sidebar.text_input("ID da amostra")
 analyst = st.sidebar.text_input("Analista")
@@ -483,9 +484,18 @@ def page_dilution():
         show_error(e)
 
 
+def page_guide():
+    """Guia de uso: docs/guia.md, uma seção (## título) por expander."""
+    text = (Path(__file__).parent / "docs" / "guia.md").read_text(encoding="utf-8")
+    for i, section in enumerate(text.removeprefix("## ").split("\n## ")):
+        title, _, body = section.partition("\n")
+        with st.expander(title, expanded=i == 0):
+            st.markdown(body)
+
+
 tabs = st.tabs(["🧪 Análises", "⚗️ Titulação", "🎯 Padronização", "📊 Estatística", "🌈 Espectrofotometria",
-                "💧 Diluição"])
+                "💧 Diluição", "📖 Como usar"])
 for tab, page in zip(tabs, [page_analyses, page_titration, page_standardization, page_statistics, page_spectro,
-                            page_dilution]):
+                            page_dilution, page_guide]):
     with tab:
         page()

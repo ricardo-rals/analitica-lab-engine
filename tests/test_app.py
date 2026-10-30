@@ -18,13 +18,15 @@ def test_app_renderiza_todas_as_analises():
         at.selectbox(key="an_method").set_value(key).run()
         assert not at.exception, key
     assert not at.error, [e.value for e in at.error]
+    assert "Visão geral" in [e.label for e in at.expander]   # aba Como usar carregou o guia
 
 
 def test_index_html_lista_todos_os_py():
     """O stlite só enxerga os arquivos listados no index.html."""
     root = Path(__file__).parent.parent
     html = (root / "index.html").read_text(encoding="utf-8")
-    py = [p.relative_to(root).as_posix() for d in ("modules", "utils") for p in (root / d).glob("*.py")]
+    py = [p.relative_to(root).as_posix() for d, pat in (("modules", "*.py"), ("utils", "*.py"), ("docs", "*.md"))
+          for p in (root / d).glob(pat)]
     missing = [p for p in py + ["app.py"] if f'"{p}"' not in html]
     assert not missing, f"Faltam no index.html: {missing}"
 

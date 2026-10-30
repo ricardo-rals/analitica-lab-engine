@@ -12,7 +12,7 @@
     <script type="module">
       import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.85.1/build/stlite.js";
 
-      // Arquivo .py novo no projeto? Acrescente aqui, senão ele não existe no navegador.
+      // Arquivo .py (ou .md lido pelo app) novo no projeto? Acrescente aqui, senão ele não existe no navegador.
       const files = [
         "app.py",
         "modules/__init__.py",
@@ -25,6 +25,7 @@
         "utils/__init__.py",
         "utils/formatting.py",
         "utils/report.py",
+        "docs/guia.md",
       ];
 
       mount(
