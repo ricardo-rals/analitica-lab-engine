@@ -101,11 +101,31 @@ Avisos importantes:
 
 **Beer-Lambert direto**: quando a absortividade molar (ε) é conhecida, `c = A / (ε · l)`, com o resultado em mol/L.
 
-## 💧 Diluição
+## 💧 Soluções
 
-- **C₁·V₁ = C₂·V₂**: preencha três campos e deixe em branco o que quer descobrir. Use a mesma unidade dos dois lados.
-- **Fator de diluição**: `FD = volume final ÷ alíquota`. Multiplique o resultado medido pelo FD para obter o da amostra original (as abas de análise já fazem isso pelo campo FD).
-- **Conversão de unidades**: mol/L ↔ g/L ↔ mg/L pela massa molar. Em solução aquosa diluída, mg/L ≈ ppm.
+Cálculos do dia a dia de preparo de soluções. Escolha o cálculo no seletor **Cálculo**.
+
+**Preencha tudo menos o que quer descobrir.** Na maioria das fórmulas, deixe em branco a variável desconhecida e o app a calcula. A mesma tela responde "qual a concentração?", "quanto pesar?" e "qual o volume?". Unidades fixas: massa em **g**, volume em **mL**, massa molar em **g/mol**.
+
+| Cálculo | Fórmula | Exemplo de uso |
+|---|---|---|
+| Concentração molar / quanto pesar | `C = m / (M · V)` | Quanto NaCl pesar para 500 mL de 0,1 mol/L? → 2,922 g |
+| Concentração comum | `C (g/L) = m / V` | 5 g em 250 mL → 20 g/L |
+| Diluição | `C₁·V₁ = C₂·V₂` | Quanto da solução 1 mol/L para fazer 100 mL de 0,1 mol/L? → 10 mL |
+| Reagente comercial | `C = d · 1000 · título / M` | HCl 37 % (d 1,19) → 12,08 mol/L |
+| Porcentagem | `% = soluto / solução × 100` | Soro 0,9 % m/v, 500 mL → 4,5 g de NaCl |
+| Molalidade | `b = m soluto / (M · kg solvente)` | 5,844 g de NaCl em 500 g de água → 0,2 mol/kg |
+| Densidade | `d = m / V` | 10 mL de H₂SO₄ (d 1,84) → 18,4 g |
+| Mistura de soluções | `C = Σ(Cᵢ · Vᵢ) / ΣVᵢ` | 100 mL 0,1 + 200 mL 0,4 mol/L → 0,3 mol/L |
+| Fator de diluição | `FD = V final / V alíquota` | 10 mL completados a 100 mL → FD 10 |
+| Conversões | mol/L ↔ g/L ↔ mg/L; % ↔ ‰ ↔ ppm ↔ ppb | 0,5 % → 5000 ppm |
+
+Dicas:
+- **Sal hidratado** (ex.: CuSO₄·5H₂O): no "quanto pesar", use a massa molar **do hidrato** (249,69 g/mol), e não a do sal anidro.
+- **Reagente comercial**: escolha o ácido ou a base na lista para preencher título, densidade e massa molar com valores típicos de rótulo. **Confira o frasco**, porque os valores variam entre fabricantes e lotes. Preencha também a concentração e o volume desejados para saber **quanto pipetar**. Sempre adicione o ácido sobre a água, nunca o contrário.
+- **Porcentagem**: escolha o tipo antes. Em % m/m e % v/v o soluto não pode passar da solução.
+- **Mistura**: preencha uma linha por solução. Todas devem estar na mesma unidade de concentração, e o resultado sai nessa unidade.
+- **mg/L ≈ ppm** só vale em solução aquosa diluída (densidade ≈ 1 g/mL).
 
 ## Avisos e erros
 

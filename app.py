@@ -59,7 +59,7 @@ def parse_nan(v):
 def show_error(e):
     """Campo ainda não preenchido é orientação (info), o resto é erro."""
     msg = str(e)
-    (st.info if msg.startswith(("Informe", "Nenhum valor")) else st.error)(msg)
+    (st.info if msg.startswith(("Informe", "Nenhum valor", "Deixe exatamente")) else st.error)(msg)
 
 
 def show_table(rows):
@@ -432,56 +432,152 @@ def page_spectro():
                [("Concentração da amostra", fmt(result, D, unit))], "espectro")
 
 
-def page_dilution():
-    st.subheader("C₁·V₁ = C₂·V₂")
-    st.caption("Preencha três campos e deixe em branco o que quer calcular.")
-    cols = st.columns(4)
-    with cols[0]:
-        c1 = num("C₁ (estoque)", None, "dil_c1")
-    with cols[1]:
-        v1 = num("V₁ (alíquota)", None, "dil_v1")
-    with cols[2]:
-        c2 = num("C₂ (final)", None, "dil_c2")
-    with cols[3]:
-        v2 = num("V₂ (final)", None, "dil_v2")
-    if [c1, v1, c2, v2].count(None) == 4:
-        st.info("Informe três dos quatro valores.")
-    else:
-        try:
-            r = conversions.c1v1(c1, v1, c2, v2)
-            st.metric(f"{dict(c1='C₁', v1='V₁', c2='C₂', v2='V₂')[r['solved']]} calculado", fmt(r["value"], D))
-            show_warnings(r["warnings"])
-        except ValueError as e:
-            show_error(e)
+def solver_form(key, fn, fields, formula, **fixed):
+    """Formulário "preencha todos menos um": fields = [(nome, rótulo, unidade)]; fn resolve o que faltar."""
+    st.caption(f"`{formula}` — preencha todos os campos menos o que quer calcular.")
+    vals = {}
+    for col, (name, label, unit) in zip(st.columns(len(fields)), fields):
+        with col:
+            vals[name] = num(f"{label} ({unit})" if unit else label, None, f"{key}_{name}")
+    if all(v is None for v in vals.values()):
+        st.info("Preencha os valores conhecidos.")
+        return
+    try:
+        r = fn(**fixed, **vals)
+    except ValueError as e:
+        show_error(e)
+        return
+    _, label, unit = next(f for f in fields if f[0] == r["solved"])
+    st.metric(f"{label} calculado", fmt(r["value"], D, unit))
+    show_warnings(r["warnings"])
 
-    st.divider()
-    st.subheader("Fator de diluição")
+
+def percent_form():
+    kind = st.radio("Tipo", conversions.PERCENT_KINDS, horizontal=True, key="pct_kind",
+                    format_func=lambda k: f"% {k}")
+    solute = ("Volume do soluto", "mL") if kind == "v/v" else ("Massa do soluto", "g")
+    solution = ("Massa da solução", "g") if kind == "m/m" else ("Volume da solução", "mL")
+    solver_form(f"pct_{kind.replace('/', '')}", conversions.percent,
+                [("p", "Porcentagem", f"% {kind}"), ("solute", *solute), ("solution", *solution)],
+                "% = soluto / solução × 100", kind=kind)
+
+
+def reagent_form():
+    st.caption("`C = d · 1000 · (título / 100) / M` — ácidos e bases concentrados comerciais. "
+               "Valores típicos de rótulo: confira o frasco.")
+    name = st.selectbox("Reagente", list(conversions.COMMERCIAL_REAGENTS) + ["Outro"], key="reag_name")
+    t0, d0, mm0 = conversions.COMMERCIAL_REAGENTS.get(name, (None, None, None))
+    cols = st.columns(3)
+    with cols[0]:
+        t = num("Título (% m/m)", t0, f"reag_t_{name}")
+    with cols[1]:
+        d = num("Densidade (g/mL)", d0, f"reag_d_{name}")
+    with cols[2]:
+        mm = num("Massa molar (g/mol)", mm0, f"reag_mm_{name}")
+    st.markdown("**Preparar uma solução diluída** (opcional)")
+    cols = st.columns(2)
+    with cols[0]:
+        cf = num("Concentração desejada (mol/L)", None, "reag_cf")
+    with cols[1]:
+        vf = num("Volume final (mL)", None, "reag_vf")
+    try:
+        r = conversions.commercial_reagent(d, t, mm, cf, vf)
+    except ValueError as e:
+        show_error(e)
+        return
+    c1, c2 = st.columns(2)
+    c1.metric("Concentração do reagente", fmt(r["c"], D, "mol/L"))
+    c2.metric("Concentração comum", fmt(r["c_g_l"], D, "g/L"))
+    if r["volume"] is not None:
+        st.metric("Volume do reagente a pipetar", fmt(r["volume"], D, "mL"))
+        st.caption(f"Pipete o reagente sobre parte da água e complete até {fmt(vf, 1, 'mL')}. "
+                   "Sempre o ácido sobre a água, nunca o contrário.")
+
+
+def mix_form():
+    st.caption("`C final = Σ(Cᵢ · Vᵢ) / ΣVᵢ` — soluções do mesmo soluto, na mesma unidade de concentração.")
+    df = st.data_editor(pd.DataFrame({"Concentração": [""] * 3, "Volume (mL)": [""] * 3}), key="mix",
+                        num_rows="dynamic", hide_index=True)
+    try:
+        pairs = [(parse_number(c), parse_number(v)) for c, v in zip(df.iloc[:, 0], df.iloc[:, 1])]
+        pairs = [p for p in pairs if p != (None, None)]
+        if any(None in p for p in pairs):
+            raise ValueError("Há solução com concentração ou volume em branco.")
+        r = conversions.mix([c for c, _ in pairs], [v for _, v in pairs])
+    except ValueError as e:
+        show_error(e)
+        return
+    c1, c2 = st.columns(2)
+    c1.metric("Concentração final", fmt(r["c"], D))
+    c2.metric("Volume total", fmt(r["v_total"], D, "mL"))
+
+
+def dilution_factor_form():
+    st.caption("`FD = V final / V alíquota` — multiplique o resultado medido pelo FD.")
     cols = st.columns(2)
     with cols[0]:
         vf = num("Volume final (mL)", 100, "fd_vf")
     with cols[1]:
         va = num("Volume da alíquota (mL)", 10, "fd_va")
     try:
-        st.metric("FD = V final / V alíquota", fmt(conversions.dilution_factor(vf, va), D))
+        st.metric("Fator de diluição", fmt(conversions.dilution_factor(vf, va), D))
     except ValueError as e:
         show_error(e)
 
-    st.divider()
-    st.subheader("Conversão de unidades")
-    cols = st.columns(4)
+
+def unit_form(key, units, convert, default_to, caption, with_mm=False):
+    cols = st.columns(4 if with_mm else 3)
     with cols[0]:
-        val = num("Valor", 0.1, "conv_val")
+        val = num("Valor", None, f"{key}_val")
     with cols[1]:
-        u_from = st.selectbox("De", conversions.UNITS, key="conv_from")
+        u_from = st.selectbox("De", units, key=f"{key}_from")
     with cols[2]:
-        u_to = st.selectbox("Para", conversions.UNITS, index=2, key="conv_to")
-    with cols[3]:
-        mm = num("Massa molar (g/mol)", 58.44, "conv_mm")
+        u_to = st.selectbox("Para", units, index=default_to, key=f"{key}_to")
+    extra = []
+    if with_mm:
+        with cols[3]:
+            extra = [num("Massa molar (g/mol)", None, f"{key}_mm")]
     try:
-        st.metric("Resultado", fmt(conversions.convert_concentration(val, u_from, u_to, mm), D, u_to))
-        st.caption("mg/L ≈ ppm em solução aquosa diluída.")
+        st.metric("Resultado", fmt(convert(val, u_from, u_to, *extra), D, u_to))
     except ValueError as e:
         show_error(e)
+    st.caption(caption)
+
+
+SOLUTION_CALCS = {
+    "Concentração molar / quanto pesar (mol/L)": lambda: solver_form(
+        "mol", conversions.molar_concentration,
+        [("c", "Concentração", "mol/L"), ("mm", "Massa molar", "g/mol"), ("v", "Volume", "mL"), ("m", "Massa", "g")],
+        "C = m / (M · V)"),
+    "Concentração comum (g/L)": lambda: solver_form(
+        "cc", conversions.common_concentration,
+        [("c", "Concentração", "g/L"), ("v", "Volume", "mL"), ("m", "Massa", "g")], "C = m / V"),
+    "Diluição (C₁·V₁ = C₂·V₂)": lambda: solver_form(
+        "dil", conversions.c1v1,
+        [("c1", "C₁ (estoque)", ""), ("v1", "V₁ (alíquota)", ""), ("c2", "C₂ (final)", ""), ("v2", "V₂ (final)", "")],
+        "C₁·V₁ = C₂·V₂ (mesma unidade dos dois lados)"),
+    "Reagente comercial concentrado (ácidos e bases)": reagent_form,
+    "Porcentagem (% m/m, % m/v, % v/v)": percent_form,
+    "Molalidade (mol/kg)": lambda: solver_form(
+        "molal", conversions.molality,
+        [("b", "Molalidade", "mol/kg"), ("mm", "Massa molar", "g/mol"), ("m_solvent", "Massa do solvente", "g"),
+         ("m_solute", "Massa do soluto", "g")], "b = m soluto / (M · m solvente)"),
+    "Densidade": lambda: solver_form(
+        "dens", conversions.density, [("d", "Densidade", "g/mL"), ("v", "Volume", "mL"), ("m", "Massa", "g")],
+        "d = m / V"),
+    "Mistura de soluções": mix_form,
+    "Fator de diluição": dilution_factor_form,
+    "Conversão mol/L ↔ g/L ↔ mg/L": lambda: unit_form(
+        "conv", conversions.UNITS, conversions.convert_concentration, 2,
+        "1 mol/L = M g/L. mg/L ≈ ppm em solução aquosa diluída.", with_mm=True),
+    "Conversão % ↔ ‰ ↔ ppm ↔ ppb": lambda: unit_form(
+        "frac", list(conversions.FRACTIONS), conversions.convert_fraction, 2, "1 % = 10 ‰ = 10⁴ ppm = 10⁷ ppb."),
+}
+
+
+def page_solutions():
+    calc = st.selectbox("Cálculo", list(SOLUTION_CALCS), key="sol_calc")
+    SOLUTION_CALCS[calc]()
 
 
 def page_guide():
@@ -494,8 +590,8 @@ def page_guide():
 
 
 tabs = st.tabs(["🧪 Análises", "⚗️ Titulação", "🎯 Padronização", "📊 Estatística", "🌈 Espectrofotometria",
-                "💧 Diluição", "📖 Como usar"])
+                "💧 Soluções", "📖 Como usar"])
 for tab, page in zip(tabs, [page_analyses, page_titration, page_standardization, page_statistics, page_spectro,
-                            page_dilution, page_guide]):
+                            page_solutions, page_guide]):
     with tab:
         page()

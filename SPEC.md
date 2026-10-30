@@ -102,6 +102,21 @@ Seção onde o analista escolhe a análise (ex.: "Dureza total") e preenche só 
 - [x] **RF-07.6** Usa as mesmas réplicas, branco, fator `f` (pode vir da Padronização, RF-02.3), estatística (RF-03) e diluição (RF-05.2) das outras abas.
 - **Validações:** as mesmas de RF-01; V_corr ≤ 0 no modo `retrotitulação` → erro "volume da amostra maior que o do branco"; dureza cálcica > total → erro; P > T → erro.
 
+### RF-08 Cálculos básicos de soluções (`modules/conversions.py`)
+Cálculos do dia a dia de preparo de soluções. Em cada fórmula o usuário **preenche todas as variáveis menos uma**, e o app resolve a que ficou em branco (ex.: "quanto pesar?", "qual o volume?").
+Unidades fixas de bancada: massa em g, volume em mL, massa molar em g/mol.
+
+- [x] **RF-08.1 Concentração comum:** `C [g/L] = m [g] / V [L]`.
+- [x] **RF-08.2 Concentração molar (molaridade):** `C [mol/L] = m / (M · V [L])`. Uso principal: quanto pesar, `m = C · M · V`.
+- [x] **RF-08.3 Molalidade:** `b [mol/kg] = m_soluto / (M · m_solvente [kg])`.
+- [x] **RF-08.4 Porcentagens:** `% m/m = m_soluto / m_solução · 100`; `% m/v = m_soluto [g] / V_solução [mL] · 100`; `% v/v = V_soluto / V_solução · 100`.
+- [x] **RF-08.5 Densidade:** `d [g/mL] = m / V`.
+- [x] **RF-08.6 Reagente comercial concentrado** (ex.: HCl 37 %): `C [mol/L] = d [g/mL] · 1000 · (título % / 100) / M`; opcionalmente, o volume do reagente para preparar `V_final` de `C_final`: `V = C_final · V_final / C`.
+- [x] **RF-08.7 Mistura de soluções do mesmo soluto:** `C_final = Σ(Cᵢ · Vᵢ) / ΣVᵢ`.
+- [x] **RF-08.8 Conversão de frações:** % ↔ ‰ ↔ ppm ↔ ppb (1 % = 10⁴ ppm = 10⁷ ppb).
+- [x] **RF-08.9** A diluição (RF-05) passa para a mesma aba, que é renomeada para **Soluções**.
+- **Validações:** exatamente um campo em branco; valores ≤ 0 → erro; % m/m e % v/v: soluto > solução → erro; título do reagente > 100 % → erro; mistura com listas de tamanhos diferentes → erro.
+
 ## 4. Requisitos não funcionais
 
 - **RNF-01 Formatação:** resultados com casas decimais configuráveis (padrão 4); notação científica quando |x| < 0,01 ou ≥ 1e4. Exibição com vírgula decimal (pt-BR).
@@ -114,7 +129,7 @@ Seção onde o analista escolhe a análise (ex.: "Dureza total") e preenche só 
 ## 5. Interface
 
 Sidebar: navegação + rastreabilidade (RF-06.3) + casas decimais (RNF-01).
-Abas: **Análises** (RF-07, primeira aba, a mais usada no dia a dia) · **Titulação** (cálculo livre) · **Padronização** · **Estatística** · **Espectrofotometria** · **Diluição**.
+Abas: **Análises** (RF-07, primeira aba, a mais usada no dia a dia) · **Titulação** (cálculo livre) · **Padronização** · **Estatística** · **Espectrofotometria** · **Soluções** (RF-05 + RF-08, com um seletor de cálculo) · **Como usar**.
 Na aba Análises: selectbox da análise → card com referência, titulante e indicador → entradas → etapas → resultado.
 Cada aba: entradas (parâmetros + `st.data_editor` para réplicas) → bloco "Etapas do cálculo" → resultado final destacado (`st.metric`) → botões de exportação.
 
@@ -144,6 +159,15 @@ Viram testes em `tests/`. Tolerância relativa 1e-3 salvo indicação.
 | CA-18 | DQO: FAS 0,2500 mol/L, branco 10,00 mL, amostra 7,50 mL, V_amostra 20,00 mL | 250 mg O₂/L |
 | CA-19 | DQO com amostra 10,50 mL e branco 10,00 mL | `ValueError` |
 | CA-20 | Ferro: curva do CA-07, amostra A 0,250, FD 2 | ≈ 5,00 mg Fe/L |
+| CA-21 | Concentração comum: m 5,0 g, V 250 mL | 20,0 g/L |
+| CA-22 | Quanto pesar: NaCl 0,10 mol/L, 500 mL, M 58,44 | m 2,922 g |
+| CA-23 | Molalidade: 5,844 g NaCl (M 58,44) em 500 g de água | 0,200 mol/kg |
+| CA-24 | % m/v 0,9 %, V 500 mL, massa em branco | 4,5 g |
+| CA-25 | HCl 37 %, d 1,19 g/mL, M 36,46; preparar 1000 mL de 0,1 mol/L | C 12,08 mol/L; V 8,28 mL |
+| CA-26 | Mistura: 100 mL de 0,1 mol/L + 200 mL de 0,4 mol/L | 0,300 mol/L |
+| CA-27 | 0,5 % → ppm | 5000 ppm |
+| CA-28 | Densidade 1,84 g/mL, V 10 mL, massa em branco | 18,4 g |
+| CA-29 | % m/m com soluto 30 g e solução 20 g; dois campos em branco | `ValueError` |
 
 ## 7. Plano de entrega
 
@@ -152,3 +176,4 @@ Viram testes em `tests/`. Tolerância relativa 1e-3 salvo indicação.
 3. **Fase 3 — análises pré-cadastradas:** `methods.py` (RF-07), testes CA-13 a CA-20.
 4. **Fase 4 — UI:** `app.py` com as 6 abas, formatação, avisos.
 5. **Fase 5 — relatórios:** CSV e PDF com rastreabilidade.
+6. **Fase 6 — soluções:** RF-08 em `conversions.py`, aba Diluição vira Soluções, testes CA-21 a CA-29.

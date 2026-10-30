@@ -18,7 +18,8 @@ modules/
   titration.py          # titulação livre, padronização, % m/m, normalidade
   stats.py              # média, s, CV, IC (t-Student), Grubbs
   spectro.py            # Beer-Lambert, curva de calibração, LOD/LOQ
-  conversions.py        # C1V1=C2V2, fator de diluição, mol/L <-> g/L <-> mg/L
+  conversions.py        # soluções: resolvedor "preencha todos menos um" (molar, comum, %, molalidade,
+                        #   densidade, C1V1), reagente comercial, mistura, FD, conversões
 utils/
   report.py             # exportação CSV e PDF
   formatting.py         # formatação pt-BR / notação científica, parse de vírgula decimal

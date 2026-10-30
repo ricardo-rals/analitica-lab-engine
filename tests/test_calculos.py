@@ -121,6 +121,52 @@ def test_ca19_dqo_amostra_maior_que_branco():
         methods.run_titration("dqo", [10.50], 10.00, 0.2500, 1, 20.00)
 
 
+def test_ca21_concentracao_comum():
+    assert conversions.common_concentration(m=5.0, v=250)["c"] == approx(20.0)
+
+
+def test_ca22_quanto_pesar():
+    r = conversions.molar_concentration(c=0.10, mm=58.44, v=500)
+    assert r["solved"] == "m" and r["m"] == approx(2.922, rel=REL)
+
+
+def test_ca23_molalidade():
+    assert conversions.molality(m_solute=5.844, mm=58.44, m_solvent=500)["b"] == approx(0.200, rel=REL)
+
+
+def test_ca24_porcentagem_mv():
+    assert conversions.percent("m/v", p=0.9, solution=500)["solute"] == approx(4.5)
+
+
+def test_ca25_reagente_comercial():
+    r = conversions.commercial_reagent(1.19, 37, 36.46, c_final=0.1, v_final=1000)
+    assert r["c"] == approx(12.08, rel=REL)
+    assert r["volume"] == approx(8.28, rel=REL)
+
+
+def test_ca26_mistura():
+    assert conversions.mix([0.1, 0.4], [100, 200])["c"] == approx(0.300)
+
+
+def test_ca27_conversao_fracao():
+    assert conversions.convert_fraction(0.5, "%", "ppm") == approx(5000)
+
+
+def test_ca28_densidade():
+    assert conversions.density(d=1.84, v=10)["m"] == approx(18.4)
+
+
+@pytest.mark.parametrize("call", [
+    lambda: conversions.percent("m/m", solute=30, solution=20),
+    lambda: conversions.molar_concentration(c=0.1, mm=58.44),
+    lambda: conversions.commercial_reagent(1.19, 120, 36.46),
+    lambda: conversions.mix([0.1], [100, 200]),
+])
+def test_ca29_solucoes_invalidas(call):
+    with pytest.raises(ValueError):
+        call()
+
+
 def test_formatacao_pt_br():
     assert fmt(10.1, 2, "mL") == "10,10 mL"
     assert fmt(0.000123, 2) == "1,23e-04"
